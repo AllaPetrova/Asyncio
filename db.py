@@ -1,29 +1,39 @@
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Text
+import asyncpg
+import asyncio
 
+async def create_tables():
+    conn = await asyncpg.connect('postgresql://user:password@localhost/db')
+    
+    await conn.execute('''
+        CREATE TABLE IF NOT EXISTS characters(
+            id INTEGER PRIMARY KEY,
+            birth_year VARCHAR(20),
+            eye_color VARCHAR(20),
+            gender VARCHAR(20),
+            hair_color VARCHAR(20),
+            homeworld INTEGER,
+            mass NUMERIC,
+            name VARCHAR(100) NOT NULL,
+            skin_color VARCHAR(50)
+        )
+    ''')
+    await conn.close()
 
-PG_DSN = f'postgresql+asyncpg://postgres:postgres@127.0.0.1:5431/netology_async'
-engine = create_async_engine(PG_DSN)
-Base = declarative_base(bind=engine)
-Session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-
-class PersonModel(Base):
-    __tablename__ = 'people'
-
-    id = Column(Integer, primary_key=True)
-    birth_year = Column(String)
-    eye_color = Column(String)
-    films = Column(Text)
-    gender = Column(String)
-    hair_color = Column(String)
-    height = Column(String)
-    homeworld = Column(String)
-    mass = Column(String)
-    name = Column(String)
-    skin_color = Column(String)
-    species = Column(Text)
-    starships = Column(Text)
-    vehicles = Column(Text)
+async def insert_characters(character_data):
+    conn = await asyncpg.connect('postgresql://user:password@localhost/db')
+    
+    await conn.executemany('''
+        INSERT INTO characters (id, birth_year, eye_color, gender, hair_color, homeworld, mass, name, skin_color)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (id) DO UPDATE SET
+            birth_year = EXCLUDED.birth_year,
+            eye_color = EXCLUDED.eye_color,
+            gender = EXCLUDED.gender,
+            hair_color = EXCLUDED.hair_color,
+            homeworld = EXCLUDED.homeworld,
+            mass = EXCLUDED.mass,
+            name = EXCLUDED.name,
+            skin_color = EXCLUDED.skin_color
+    ''', character_data)
+    
+    await conn.close()

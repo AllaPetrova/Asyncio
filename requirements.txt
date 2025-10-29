@@ -1,5 +1,3 @@
-pytest
+txt
 aiohttp
-more-itertools
-sqlalchemy
 asyncpg
